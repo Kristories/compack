@@ -15,25 +15,25 @@ class NewCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'new';
+    protected string $signature = 'new';
 
     /**
      * The description of the command.
      *
      * @var string
      */
-    protected $description = 'Create a new package';
+    protected string $description = 'Create a new package';
 
     protected $fs;
 
-    protected $data = [];
+    protected array $data = [];
 
     /**
      * Execute the console command.
      *
      * @return mixed
      */
-    public function handle()
+    public function handle(): mixed
     {
         $this->data['authorName'] = $this->ask('Author Name', $this->callCommand('git config user.name'));
         $this->data['authorUsername'] = $this->ask('Author Username', Str::slug($this->data['authorName']));
@@ -58,9 +58,9 @@ class NewCommand extends Command
     /**
      * Download and extract template repository.
      *
-     * @return mixed
+     * @return void
      */
-    private function download()
+    private function download(): void
     {
         $isPath = realpath($this->data['templateRepo']);
 
@@ -91,31 +91,31 @@ class NewCommand extends Command
             if ($response->status() != 200) {
                 return $this->error('Invalid template repository');
             }
-
+    
             Storage::put($zipPath, $response->body());
             Storage::deleteDirectory($this->data['targetPath']);
-
+    
             $zip = new ZipArchive;
             $zip->open($zipPath, ZipArchive::CHECKCONS);
             $zip->extractTo(dirname($this->data['templateRepo']));
             $zip->close();
-
+    
             Storage::move($this->data['templateRepo'].'-'.$this->data['templateBranch'], $this->data['targetPath']);
 
             $this->data['vendorSlug'] == $templateOrg
                 ? Storage::deleteDirectory($this->data['templateRepo'])
                 : Storage::deleteDirectory($templateOrg);
-
+    
             Storage::delete($zipPath);
         }
     }
-
+    
     /**
      * Setup package.
      *
-     * @return mixed
+     * @return void
      */
-    private function setup()
+    private function setup(): void
     {
         $replacements = [
             ':author_name' => $this->data['authorName'],
@@ -130,11 +130,11 @@ class NewCommand extends Command
             ':package_slug' => $this->data['packageSlug'],
             ':year' => now()->format('Y'),
         ];
-
+    
         $files = Storage::allFiles();
         $bar = $this->output->createProgressBar(count($files));
         $bar->start();
-
+    
         foreach ($files as $file) {
             $contents = Storage::get($file);
             $contents = str_replace(
@@ -142,7 +142,7 @@ class NewCommand extends Command
                 array_values($replacements),
                 $contents
             );
-
+    
             Storage::put($file, $contents);
 
             $renameFiles = [
@@ -170,10 +170,13 @@ class NewCommand extends Command
     /**
      * Run command
      *
-     * @return mixed
+     * @param string $command The command to execute.
+     * @return string|null The trimmed output of the command, or null if an error occurred.
      */
-    private function callCommand($command)
+    private function callCommand(string $command): ?string
     {
-        return trim(shell_exec($command));
+        $output = shell_exec($command);
+        
+        return is_string($output) ? trim($output) : null;
     }
 }
